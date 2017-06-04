@@ -46,132 +46,31 @@
 		<script type="text/javascript" src="./lib/three.js."></script>
 		<script type="text/javascript" src="./lib/PointerLockControls.js"></script>
     <script type="text/javascript" src="./lib/microcache.js"></script>
+	<script type="text/javascript" src="./src/Movement.js"></script>
     <script type="text/javascript" src="./lib/CombinedCamera.js"></script>
-    <script type="text/javascript" src="./Shaders/BuildingShader.js"></script>
-    <script type="text/javascript" src="./Shaders/SkyShader.js"></script>
-    <script type="text/javascript" src="./Shaders/GroundShader.js"></script>
+    <script type="text/javascript" src="./shaders/BuildingShader.js"></script>
+    <script type="text/javascript" src="./shaders/SkyShader.js"></script>
+    <script type="text/javascript" src="./shaders/GroundShader.js"></script>
     <script type="text/javascript" src="./lib/MV.js"></script>
 
-		<div id="blocker" style="display: -webkit-box;">
+	<div id="blocker" style="display: -webkit-box;">
 
-			<div id="instructions">
-			  <span style="font-size:40px">Click to begin</span>
-				<br>
-				(W, A, S, D = Move, T = Skyline View, MOUSE = Look around)
-			</div>
+		<div id="instructions">
+		  <span style="font-size:40px">Click to begin</span>
+			<br>
+			(W, A, S, D = Move, T = Skyline View, MOUSE = Look around)
+		</div>
 
-		  </div>
+	  </div>
       <script>
-
-        var camera, scene, renderer;
-        var geometry, material, mesh;
-        var controls;
-
-        // Pointer Lock initialization code
-        var blocker = document.getElementById('blocker');
-        var instructions = document.getElementById('instructions');
-
-        var havePointerLock = 'pointerLockElement' in document || 'mozPointerLockElement' in document || 'webkitPointerLockElement' in document;
-
-        // Variables for handling controls and 
-        // indicating keypresses
-        var controlsEnabled = true;
-        var moveForward = false;
-        var moveBackward = false;
-        var moveLeft = false;
-        var moveRight = false;
-
+	  
+		var geometry, material, mesh;
+		
+		beginMovement();
+		
         var drewTime = 0;
         var prevTime = performance.now();
-        var velocity = new THREE.Vector3();
-
-        /**
-        * Pointerlock code comes from the following example 
-        * https://threejs.org/examples/misc_controls_pointerlock.html. It
-        * was written by Mr. Doob and been minorly altered.
-        */
-        if (havePointerLock) {
-
-          var element = document.body;
-
-          var pointerlockchange = function (event) {
-
-            if (document.pointerLockElement === element || document.mozPointerLockElement === element || document.webkitPointerLockElement === element) {
-
-            if (!skylineView){
-              controlsEnabled = true;  
-              controls.enabled = true;
-            }
-            
-              blocker.style.display = 'none';
-
-            } else {
-
-              controls.enabled = false;
-
-              blocker.style.display = '-webkit-box';
-              blocker.style.display = '-moz-box';
-              blocker.style.display = 'box';
-
-              instructions.style.display = '';
-            }
-          };
-
-          var pointerlockerror = function (event) {
-            instructions.style.display = '';
-          };
-
-          // Hook pointer lock state change events
-          document.addEventListener('pointerlockchange', pointerlockchange, false);
-          document.addEventListener('mozpointerlockchange', pointerlockchange, false);
-          document.addEventListener('webkitpointerlockchange', pointerlockchange, false);
-
-          document.addEventListener('pointerlockerror', pointerlockerror, false);
-          document.addEventListener('mozpointerlockerror', pointerlockerror, false);
-          document.addEventListener('webkitpointerlockerror', pointerlockerror, false);
-
-          instructions.addEventListener('click', function (event) {
-
-            instructions.style.display = 'none';
-
-            // Ask the browser to lock the pointer
-            element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
-
-            if (/Firefox/i.test(navigator.userAgent)) {
-
-              var fullscreenchange = function (event) {
-
-                if (document.fullscreenElement === element || document.mozFullscreenElement === element || document.mozFullScreenElement === element) {
-
-                  document.removeEventListener('fullscreenchange', fullscreenchange);
-                  document.removeEventListener('mozfullscreenchange', fullscreenchange);
-
-                  element.requestPointerLock();
-                }
-
-              };
-
-              document.addEventListener('fullscreenchange', fullscreenchange, false);
-              document.addEventListener('mozfullscreenchange', fullscreenchange, false);
-
-              element.requestFullscreen = element.requestFullscreen || element.mozRequestFullscreen || element.mozRequestFullScreen || element.webkitRequestFullscreen;
-
-              element.requestFullscreen();
-
-            } else {
-
-              element.requestPointerLock();
-
-            }
-
-          }, false);
-
-        } else {
-          instructions.innerHTML = 'Your browser doesn\'t seem to support Pointer Lock API';
-        }
-
-        // End Pointer lock Initialization Code
-        
+       
         // The current block of a width
         var blockWidth = 40;
         // The single loader for this program
@@ -202,13 +101,15 @@
         var buildingTextureNames = ["Brick", "Stucco", "Plaster", "Metal", "Tanbrick", 
         "Tile", "Metalpanels", "Copper", "Metaltiles", "Concrete", 
         "Concretepanels", "Zincpanels", "Granitestone", "Stonecladding", 
-        "Sandstonecladding"];
+        "SandstoneCladding"];
 
         var glassBuildingTextureNames = ["Skyscraper1", "Skyscraper2", "Skyscraper3", "Skyscraper4"];
 
-        var windowTextureNames = ["windows", "windows2", "windows3", 
+        var windowTextureNames = ["windows1", "windows2", "windows3", 
         "windows4", "windows5", "windows6", "windows7", "windows8"];
 
+		var availableBuildings = [];
+		
         init();
         animate();
 
@@ -228,19 +129,7 @@
           renderer.setClearColor(0xffffff);
           renderer.setPixelRatio(window.devicePixelRatio);
           renderer.setSize(window.innerWidth, window.innerHeight);
-		  /*
-          renderer.shadowMap.enabled = true;
-          renderer.shadowMapSoft = true;
-
-          renderer.shadowCameraNear = 3;
-          renderer.shadowCameraFar = camera.far;
-          renderer.shadowCameraFov = 50;
-
-          renderer.shadowMapBias = 0.0039;
-          renderer.shadowMapDarkness = 0.5;
-          renderer.shadowMapWidth = 1024;
-          renderer.shadowMapHeight = 1024;
-          */
+		  
           renderer._microCache = new MicroCache();
           
           loader = new THREE.TextureLoader();
@@ -249,8 +138,8 @@
           
           addSkybox();
           
-          generateBuildingGeometries();
-          
+		  generateBuildings();
+		  
           initializeCity();
           
           document.body.appendChild(renderer.domElement);
@@ -582,9 +471,9 @@
           scene.remove(group);
           
           group.traverse(function(mesh) {
-            if(mesh.material){
-              mesh.material.dispose();
-            }
+			if (availableBuildings.length < 300 && mesh._is_building == true){
+				availableBuildings.push(mesh);
+			}
           });
           
           group = null;
@@ -616,146 +505,116 @@
          */
         function generatechunk(startX, startZ){
         
-          // Location variables for placing each individual building/road.
-          var posX = startX;
-          var posY = 0;
-          var posZ = startZ;
-          
-          // The width/height/depth of the mesh being added
-          var width = 0;
-          var height = 0;
-          var depth = 0;
-          
-          // Whether we just drew a through road and need to abut it with[
-          // another green strip
-          var drewRoad = false;
-          
-          // The width of the previously drawn alleyway
-          var alley;
-          
-          // Whether we are approaching the end of the chunk
-          var endOfchunk;
-          // A random number
-          var rand;
-          
-          // The far edges of this chunk
-          var chunkXEdge = startX + chunkLength;
-          var chunkZEdge = startZ + chunkWidth;
-          
-          // The building currently being added
-          var building;
-          
-          // The group representing this chunk
-          currentGroup = new THREE.Object3D();
-          
-          for (var i = 0; posZ < chunkZEdge; i++){
-            while (posX < chunkXEdge){
-              rand = Math.random();  
-              endOfchunk = (chunkXEdge + width/2) - posX < 40;
-                 
-              if (rand > .05 || endOfchunk){
-                if (!drewRoad){  
-                  alley = Math.random() * 2 + .5;
-                  posX += alley;  
-                  addAlley(alley, posX, posZ);
-                }
-                else {
-                  addGreenStrip(5, posX, posZ);
-                  posX += 5;
-                  drewRoad = false;
-                }
+			// Location variables for placing each individual building/road.
+			var posX = startX;
+			var posY = 0;
+			var posZ = startZ;
+		  
+			// The width/height/depth of the mesh being added
+			var width = 0;
+			var height = 0;
+			var depth = 0;
+		  
+			// Whether we just drew a through road and need to abut it with
+			// another green strip
+			var drewRoad = false;
+		  
+			// The width of the previously drawn alleyway
+			var alley;
+		  
+			// Whether we are approaching the end of the chunk
+			var endOfchunk;
+			// A random number
+			var rand;
+		  
+			// The far edges of this chunk
+			var chunkXEdge = startX + chunkLength;
+			var chunkZEdge = startZ + chunkWidth;
+		  
+			// The building currently being added
+			var building;
+		  
+			// The group representing this chunk
+			currentGroup = new THREE.Object3D();
+		  
+			for (var i = 0; posZ < chunkZEdge; i++){
+				while (posX < chunkXEdge){
+				
+					rand = Math.random();  
+					endOfchunk = (chunkXEdge + width/2) - posX < 40;
+						 
+					if (rand > .05 || endOfchunk){
+						if (!drewRoad){  
+						  alley = Math.random() * 2 + .5;
+						  posX += alley;  
+						}
+						drewRoad = false;
                   
-                // If the space until the edge of the chunk is <35, we
-                // create a custom building to fill that space
-                if (chunkXEdge - posX <= 35){
-                  width = chunkXEdge - posX;
-                    
-                  // If the space is less than 10, we just add a strip of grass.
-                  if (width < 10){
-                    addGreenStrip(width, posX, posZ);
-                    break;
-                  }            
-                  height = randomHeight() * 10;
-                  depth = randomDepth() * 10;
-
-                  geometry = new THREE.BoxGeometry( width, height, depth);
-                  material = getRandomBuildingMaterial(width, height);
-                }
-                else {
-                  // Pick a random building geometry
-                  rand = Math.floor(Math.random() * 125);
-                    
-                  if (rand >= 119){
-                    // ~5 percent of the time, we add a mirrored building.
-                    width = randomWidth() * 10 + 10;
-                    height = randomHeight() * 15;
-                    depth = randomDepth() * 10;
-                    
-                    geometry = new THREE.BoxGeometry( width, height, depth);
-                    var skyscraperCamera = new THREE.CubeCamera( 0.1, 5000, 512 );
-                    currentGroup.add( skyscraperCamera );
-                    
-                    rand = Math.floor(Math.random() * glassBuildingTextureNames.length);
-                    texture = renderer._microCache.get(glassBuildingTextureNames[i]);
-                      
-                    var material = new THREE.MeshBasicMaterial( { 
-                      envMap: skyscraperCamera.renderTarget.texture,
-                      reflectivity: 0.5,
-                      map: texture
-                    } );
-                      
-                    skyscraperCamera.position.x = posX + width/2;
-                    skyscraperCamera.position.z = posZ;
-                    skyscraperCamera.position.y = height/8;
-                      
-                    skyscraperCamera.name = "ssc";
-                    skyscraperCamera._rendered = 0;
-                    environmentMapCameras.push(skyscraperCamera);
-                  }
-                  else{
-                    
-                    geometry = renderer._microCache.get('building' + rand);
-                    width = geometry._width;
-                    depth = geometry._depth;
-                    height = geometry._height;          
-                    material = getRandomBuildingMaterial(width, height); 
-                  }
-                }
-                 
-                building = new THREE.Mesh( geometry, material);
-                  
-                posX += width / 2;
-                posY = height / 2;
-                  
-                // Position the building
-                building.position.x = posX;
-                building.position.y = posY;
-                building.position.z = posZ;
-                  
-                posX += width / 2;
-                  
-                currentGroup.add(building);
-                }
-                
-                // Five percent of the time, we add a through road
-                else {
-                  // This adds a through-road connecting two adjacent blocks.
-                  addGreenStrip(5, posX, posZ);
-                  width = 13;
-                  posX += width/2 + 5;
-                  addThroughRoad(posX, posZ);
-                  drewRoad = true;
-                  posX += width/2;
-                }
-              }
-              
-            // After each block, we draw a road
-            addRoad(startX, i, startZ);
-            addGround(chunkLength, startX, posZ);
-            posZ += blockWidth;
-            posX = startX;
-            width = 0;
-           }
+						// If the space until the edge of the chunk is <35, we
+						// create a custom building to fill that space
+						if (chunkXEdge - posX <= 35){
+							  width = chunkXEdge - posX;
+								
+							  // If the space is less than 10, we just add a strip of grass.
+							  if (width < 10){
+								addGreenStrip(width, posX, posZ);
+								break;
+							  }            
+							  
+							  height = randomHeight() * 10;
+							  depth = randomDepth() * 8;
+							  
+							  geometry = new THREE.BoxGeometry( width, height, depth);
+							  material = getRandomBuildingMaterial(width, height);
+							  building = new THREE.Mesh( geometry, material);
+						}
+						else {
+							// Pick a random available building
+							rand = Math.floor(Math.random() * availableBuildings.length);
+							console.log(availableBuildings.length);
+							building = availableBuildings.splice(2, 1)[0];
+							
+							width = building._width;
+							depth = building._depth;
+							height = building._height;          
+							
+							building.material.needsUpdate = true;
+							building.needsUpdate = true;
+						}
+						posX += width / 2;
+						posY = height / 2;
+						  
+						// Position the building
+						building.position.x = posX;
+						building.position.y = posY;
+						building.position.z = posZ;
+						  
+						posX += width / 2;
+						  
+						currentGroup.add(building);
+					}
+					// Five percent of the time, we add a through road
+					else {
+						// This adds a through-road connecting two adjacent blocks.
+						addGreenStrip(5, posX, posZ);
+						width = 13;
+						posX += width/2 + 5;
+						addThroughRoad(posX, posZ);
+						posX += width/2;
+						addGreenStrip(5, posX, posZ);
+						posX += 5;
+						drewRoad = true;
+					}
+				}
+				
+				// After each block, we draw a road
+				addRoad(startX, i, startZ);
+				addGround(chunkLength, startX, posZ);
+				posZ += blockWidth;
+				posX = startX;
+				width = 0;
+			}
+			
            // We set variables identifying the leading x and z edges of this
            // chunk
            currentGroup._posX = chunkXEdge;
@@ -763,43 +622,44 @@
            
            scene.add(currentGroup);
            return currentGroup;
-        }
+		}
 
-        /**
-         * Generates 125 random building geometries to be selected from when
-         * drawing buildings         
-         */
-        function generateBuildingGeometries(){
-         
-          var width;
-          var height;
-          var depth;
-          
-          var vertices;
-          
-          for (var i = 0; i < 125; i++){
-          
-            height = randomHeight() * 10;
-            width = randomWidth() * 10;
-            depth = randomDepth() * 10;    
-                  
-            // ~ 15% of the buildings will be cylindrical, 
-            // with between 3 and 12 faces.
-            if (i < 18){
-              geometry = new THREE.CylinderGeometry( width/2, width/2, height, (Math.random() * 9) + 3);
-            }
-            else{
-               // Standard cube building
-              geometry = new THREE.BoxGeometry( width, height, depth);
-            }
-            
-            geometry._height = height;
-            geometry._width = width;
-            geometry._depth = depth;
-            renderer._microCache.set(('building' + i), geometry);
-          }
-        }
-
+		
+		function generateBuildings(){
+			var width;
+			var height;
+			var depth;
+			var building;
+			
+			for (var i = 0; i < 300; i++){
+				height = randomHeight() * 10;
+				width = randomWidth() * 10;
+				depth = randomDepth() * 8;
+				// ~ 15% of the buildings will be cylindrical, 
+				// with between 3 and 12 faces.				
+				if (i < 45){
+					width =  depth;
+					geometry = new THREE.CylinderGeometry( depth/2, depth/2, height, (Math.random() * 9) + 3);
+				}
+				else{
+				   // Standard cube building
+				  geometry = new THREE.BoxGeometry( width, height, depth);
+				}
+				
+				rand = Math.floor(Math.random() * 125);
+				
+				material = getRandomBuildingMaterial(width, height);
+				
+				building = new THREE.Mesh( geometry, material);
+				building._width = width;
+				building._depth = depth;
+				building._height = height;
+				building._is_building = true;
+				
+				availableBuildings.push(building);
+			}
+		}
+		
         /**
          * Adds a ground plane. 
          * @param {int} width - The width of this ground plane.
@@ -874,7 +734,7 @@
           
           mesh = new THREE.Mesh(geometry, naterial);
 
-          mesh.position.z = posZ -.05;
+          mesh.position.z = posZ - .09;
           mesh.position.x = posX;
           mesh.position.y = .001;
           currentGroup.add(mesh);
@@ -1056,7 +916,7 @@
           renderer._microCache.set('throughroad', material);
           
           // Load the geometry for through roads
-          geometry = new THREE.PlaneGeometry(31.85, 13, 1, 3);
+          geometry = new THREE.PlaneGeometry(31.88, 13, 1, 3);
           geometry.rotateX( - Math.PI / 2);
           geometry.rotateY(Math.PI / 2);
           renderer._microCache.set('throughroadgeo', geometry);
@@ -1195,7 +1055,7 @@
           var rand = Math.random() * 10;
           // 50 percent of the time building height is between 1 and 6
           if (rand <= 5){
-            return Math.random() * 5 + 1;
+            return rand + 1;
           }
           // 40 percent of the time building hieght is between 2 and 12
           else if (rand > 5 && rand <= 9){
@@ -1226,7 +1086,15 @@
           if (controlsEnabled){
        
             var time = performance.now();
-            
+			
+			// If the simulation freezes for more than a second,
+			// we'll wait for the next update to calculate delta
+			// and move
+            if (prevTime != 0 && time - prevTime > 1000){
+				prevTime = time;
+				return;
+			}
+			
             var delta = (time - prevTime) / 1000;
 
             velocity.x -= velocity.x * 10.0 * delta;
@@ -1255,21 +1123,7 @@
             controls.getObject().translateZ(velocity.z * delta);
             
             // Every quarter of a second
-            if (time - drewTime > 250){
-              var found = false;
-              // Check for any environment cameras which have not yet been rendered 20 times
-              for (var i = 0; i < environmentMapCameras.length; i++){
-                if (environmentMapCameras[i] != undefined && environmentMapCameras[i]._rendered < 20){
-                  found = true;
-                  environmentMapCameras[i].updateCubeMap(renderer, scene);
-                  environmentMapCameras[i]._rendered++;
-                }
-              } 
-              // If no such cameras exist, clear out array
-              if (environmentMapCameras.length > 0 && !found){
-                environmentMapCameras = [];
-              }
-
+            if (time - drewTime > 125){
               // Try to draw a queued chunk
               drawQueuedchunk();
               

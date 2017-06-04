@@ -15,7 +15,8 @@ fragmentShader: [
   "uniform sampler2D texture;",
   "varying vec2 vUv;",
   "varying vec3 vModelPosition;",
-
+  "uniform float noiseAmount;",
+  
   THREE.ShaderChunk[ "common" ],
   THREE.ShaderChunk[ "fog_pars_fragment" ],
 
@@ -91,7 +92,7 @@ fragmentShader: [
 
   "void main() {",
     "vec4 tColor = texture2D( texture, vUv);",
-    "tColor = tColor * (1. - (snoise(vec2(vModelPosition.x, vModelPosition.z))));",    
+    "tColor = tColor * (1. - ((snoise(vec2(vModelPosition.x, vModelPosition.z))) / 2.));",    
     
     "gl_FragColor = vec4(tColor.rgb, 1.0);",
     
@@ -105,14 +106,16 @@ vertexShader: [
     
     "varying vec3 vModelPosition;",
     "varying vec2 vUv;",
-    
+    "uniform float repeatX;",
+	"uniform float repeatY;",
+	
     THREE.ShaderChunk[ "common" ],
     
   "void main() {",
       
     // Manually multiply uv to set repeat values
-    "vUv.x = uv.x * 96.0;",
-    "vUv.y = uv.y * 8.0;",
+    "vUv.x = uv.x * repeatX;",
+    "vUv.y = uv.y * repeatY;",
           
     "gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
     "vModelPosition = position;",

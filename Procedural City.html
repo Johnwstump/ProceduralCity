@@ -639,11 +639,11 @@
 				// with between 3 and 12 faces.				
 				if (i < 45){
 					width =  depth;
-					geometry = new THREE.CylinderGeometry( depth/2, depth/2, height, (Math.random() * 9) + 3);
+					geometry = new THREE.CylinderBufferGeometry( depth/2, depth/2, height, (Math.random() * 9) + 3);
 				}
 				else{
 				   // Standard cube building
-				  geometry = new THREE.BoxGeometry( width, height, depth);
+				  geometry = new THREE.BoxBufferGeometry( width, height, depth);
 				}
 				
 				rand = Math.floor(Math.random() * 125);
@@ -801,15 +801,26 @@
               texture.needsUpdate = true;
             },
             function (xhr) {
-            console.log((xhr.loaded / xhr.total * 100) + '% loaded !!');
+            console.log((xhr.loaded / xhr.total * 100) + '% loaded');
           },
             function (xhr) {
             console.log('An error happened');
           });
           
-          material = new THREE.MeshPhongMaterial({
-            map: texture,
-            shininess: 0
+		  var uniforms = {
+            texture: { type: "t", value: texture },
+            fogColor: {type: "vec3", value: [255, 255, 255]},
+            fogNear: {type:"float", value: fogNear},
+            fogFar: {type:"float", value: fogFar},
+			repeatX: {type:"float", value: 1.0},
+			repeatY: {type:"float", value: 1.0}
+          };
+
+          material = new THREE.ShaderMaterial({
+            uniforms        : uniforms,
+            fog             : true,
+            vertexShader    : THREE.GroundShader.vertexShader,
+            fragmentShader  : THREE.GroundShader.fragmentShader
           });
           
           renderer._microCache.set('road', material);
@@ -865,7 +876,7 @@
             function (texture) {
               texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
               texture.repeat.set(84, 12);
-              texture.anisotropy = renderer.getMaxAnisotropy();
+              texture.anisotropy = renderer.getMaxAnisotropy() / 2;
               texture.needsUpdate = true;
             },
             function (xhr) {
@@ -878,7 +889,9 @@
             texture: { type: "t", value: texture },
             fogColor: {type: "vec3", value: [255, 255, 255]},
             fogNear: {type:"float", value: fogNear},
-            fogFar: {type:"float", value: fogFar}
+            fogFar: {type:"float", value: fogFar},
+			repeatX: {type:"float", value: 96.0},
+			repeatY: {type:"float", value: 8.0}
           };
 
           material = new THREE.ShaderMaterial({
@@ -899,7 +912,7 @@
             function (texture) {
               texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
               texture.repeat.set(5, 1);
-              texture.anisotropy = renderer.getMaxAnisotropy();
+              texture.anisotropy = renderer.getMaxAnisotropy() / 2;
               texture.needsUpdate = true;
             },
             function (xhr) {
@@ -907,10 +920,21 @@
             function (xhr) {
             console.log('An error happened');
           });
-            
-          material = new THREE.MeshPhongMaterial({
-            map: texture,
-            shininess: 0
+		  
+            var uniforms = {
+            texture: { type: "t", value: texture },
+            fogColor: {type: "vec3", value: [255, 255, 255]},
+            fogNear: {type:"float", value: fogNear},
+            fogFar: {type:"float", value: fogFar},
+			repeatX: {type:"float", value: 1.0},
+			repeatY: {type:"float", value: 1.0}
+          };
+
+          material = new THREE.ShaderMaterial({
+            uniforms        : uniforms,
+            fog             : true,
+            vertexShader    : THREE.GroundShader.vertexShader,
+            fragmentShader  : THREE.GroundShader.fragmentShader
           });
           
           renderer._microCache.set('throughroad', material);

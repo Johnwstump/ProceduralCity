@@ -682,26 +682,6 @@
         }
 
         /**
-         * Adds an alleyway between buildings. 
-         * @param {int} width - The width of this alley.
-         * @param {int} posX - The x position for this alley.
-         * @param {int} posZ - The z position for this alley.
-         */
-        function addAlley(alleyWidth, posX, posZ){
-          geometry = new THREE.PlaneBufferGeometry(alleyWidth, 27, 1, 1);
-          
-          geometry.rotateX( - Math.PI / 2);
-          
-          material = renderer._microCache.get('alley');
-           
-          mesh = new THREE.Mesh(geometry, material);
-
-          mesh.position.z = posZ;
-          mesh.position.x = posX - (alleyWidth / 2);
-          currentGroup.add(mesh);	
-        }
-
-        /**
          * Adds a green strip of grass. 
          * @param {int} width - The width of this green strip.
          * @param {int} posX - The x position for this green strip.
@@ -824,28 +804,6 @@
           });
           
           renderer._microCache.set('road', material);
-          
-          // Load alley texture
-          texture = loader.load(
-            './Textures/Alley.jpg',
-            function (texture) {
-              texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-              texture.repeat.set(3, 20);
-              texture.needsUpdate = true;
-            },
-            function (xhr) {
-            console.log((xhr.loaded / xhr.total * 100) + '% loaded !');
-          },
-            function (xhr) {
-            console.log('An error happened');
-          });
-          
-          material = new THREE.MeshPhongMaterial({
-            map: texture,
-             shininess: 5
-          });
-          
-          renderer._microCache.set('alley', material);
           
           
           // Load grass texture

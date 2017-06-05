@@ -42,7 +42,7 @@ fragmentShader: [
         
         // I do not mix the window texture (texture2) at the very bottom or
         // top of the geometry.
-        "if (yPos >= height -.5){",
+        "if (yPos >= height -.25){",
           "gl_FragColor = vec4(tColor.rgb, 1.0);",
         "}",    
         "else if (yPos >= -height + 1.0){",
@@ -67,20 +67,21 @@ vertexShader: [
     "varying vec3 vModelPosition;",
     "varying vec2 vUv;",
     "varying vec2 vUv2;",
-    
+	
     THREE.ShaderChunk[ "common" ],
     
     "void main() {",
       
-      // Manually multiply uv to set repeat values
-      "vUv.x = uv.x * width * 2.0;",
-      "vUv.y = uv.y * height * 2.0;",
+		// Manually multiply uv to set repeat values
+		"vUv.x = uv.x * width * 2.0;",
+		"vUv.y = uv.y * height * 2.0;",
 
-      "vUv2.x = uv.x * (width/2.0);",
-      "vUv2.y = uv.y * (height/2.0 - .25);",
-          
-      "gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
-      "vModelPosition = position;",
+
+		"vUv2.x = uv.x * (width/2.0);",
+		"vUv2.y = uv.y * (height/2.0) - .25;",
+
+		"gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
+		"vModelPosition = position;",
       
     "}"
 

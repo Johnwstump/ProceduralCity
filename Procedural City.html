@@ -130,7 +130,19 @@
 				renderer.setClearColor(0xffffff);
 				renderer.setPixelRatio(window.devicePixelRatio);
 				renderer.setSize(window.innerWidth, window.innerHeight);
-				  
+				
+				renderer.shadowMap.enabled = true;
+				renderer.shadowMapSoft = true;
+
+				renderer.shadowCameraNear = 3;
+				renderer.shadowCameraFar = camera.far;
+				renderer.shadowCameraFov = 50;
+
+				renderer.shadowMapBias = 0.0039;
+				renderer.shadowMapDarkness = 0.5;
+				renderer.shadowMapWidth = 1024;
+				renderer.shadowMapHeight = 1024;  
+				
 				renderer._microCache = new MicroCache();
 				 
 				loader = new THREE.TextureLoader();
@@ -633,12 +645,18 @@
 					material = getRandomBuildingMaterial(width, height);
 					
 					building = new THREE.Mesh( geometry, material);
+					
 					building._width = width;
 					building._height = height;
 					building._is_building = true;
 					
+					building.castShadow = true;
+					building.receiveShadow = true;
+	
 					availableBuildings.push(building);
 				}
+				
+
 			}
 		
 			/**
@@ -708,7 +726,7 @@
 			    var roadMaterial = renderer._microCache.get('road');
 			  
 			    roadMesh = new THREE.Mesh(roadGeometry, roadMaterial);
-			  
+				
 			    roadMesh.receiveShadow = true;
 			    // We offset this road from the starting corner of the chunk by the width of
 			    // a block times the 'number' of this road.
@@ -716,7 +734,7 @@
 			    // We also need to shift the road so that it's center along the x axis lies
 			    // along the cneter of the chunk
 			    roadMesh.position.x = startX + chunkLength/2;
-			  
+				
 			    currentGroup.add(roadMesh);
 			}
 

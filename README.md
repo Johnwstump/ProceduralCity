@@ -10,8 +10,8 @@ A - Left
 S - Back
 D - Right
 
+T - Toggle Skyline View
 
-Completed as part of a course on computer graphics. This program is not optimized and may run slowly on machines 
-with limited memory. In addition, the example will not run in the Chrome browser without special permissions. 
-The firefox browser is recommended for viewing this project.
 
+Initially completed as part of a course on computer graphics; moderate changes have been made to improve performance.
+The example may not run in the Chrome browser without special permissions. 

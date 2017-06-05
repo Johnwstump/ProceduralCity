@@ -1,234 +1,235 @@
 <!DOCTYPE html>
 
-<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-	<title>Procedural City</title>
-		
-	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-  <style>
-	  html, body {
-		  width: 100%;
-		  height: 100%;
-		}
-	  body {
-		  background-color: #ffffff;
-		  margin: 0;
-	  	overflow: hidden;
-  		font-family: arial;
-		}
-		#blocker {
-  		position: absolute;
-			width: 100%;
-			height: 100%;
-			background-color: rgba(0,0,0,0.5);
-	  }
-	  #instructions {
-		  width: 100%;
-		  height: 100%;
-		  display: -webkit-box;
-		  display: -moz-box;
-		  display: box;
-		  -webkit-box-orient: horizontal;
-		  -moz-box-orient: horizontal;
-		  box-orient: horizontal;
-		  -webkit-box-pack: center;
-		  -moz-box-pack: center;
-		  box-pack: center;
-		  -webkit-box-align: center;
-		  -moz-box-align: center;
-		  box-align: center;
-		  color: #ffffff;
-		  text-align: center;
-		  cursor: pointer;
-    }
-  </style>
+<html lang="en">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<title>Procedural City</title>
+			
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			html, body {
+				width: 100%;
+				height: 100%;
+			}
+			body {
+				background-color: #ffffff;
+				margin: 0;
+				overflow: hidden;
+				font-family: arial;
+			}
+			#blocker {
+				position: absolute;
+				width: 100%;
+				height: 100%;
+				background-color: rgba(0,0,0,0.5);
+			}
+			#instructions {
+				width: 100%;
+				height: 100%;
+				display: -webkit-box;
+				display: -moz-box;
+				display: box;
+				-webkit-box-orient: horizontal;
+				-moz-box-orient: horizontal;
+				box-orient: horizontal;
+				-webkit-box-pack: center;
+				-moz-box-pack: center;
+				box-pack: center;
+				-webkit-box-align: center;
+				-moz-box-align: center;
+				box-align: center;
+				color: #ffffff;
+				text-align: center;
+				cursor: pointer;
+			}
+		</style>
 	</head>
-	  <body>
+	<body>
 		<script type="text/javascript" src="./lib/three.js."></script>
 		<script type="text/javascript" src="./lib/PointerLockControls.js"></script>
-    <script type="text/javascript" src="./lib/microcache.js"></script>
-	<script type="text/javascript" src="./src/Movement.js"></script>
-    <script type="text/javascript" src="./lib/CombinedCamera.js"></script>
-    <script type="text/javascript" src="./shaders/BuildingShader.js"></script>
-    <script type="text/javascript" src="./shaders/SkyShader.js"></script>
-    <script type="text/javascript" src="./shaders/GroundShader.js"></script>
-    <script type="text/javascript" src="./lib/MV.js"></script>
+		<script type="text/javascript" src="./lib/microcache.js"></script>
+		<script type="text/javascript" src="./src/Movement.js"></script>
+		<script type="text/javascript" src="./lib/CombinedCamera.js"></script>
+		<script type="text/javascript" src="./shaders/BuildingShader.js"></script>
+		<script type="text/javascript" src="./shaders/SkyShader.js"></script>
+		<script type="text/javascript" src="./shaders/GroundShader.js"></script>
+		<script type="text/javascript" src="./lib/MV.js"></script>
 
-	<div id="blocker" style="display: -webkit-box;">
-
-		<div id="instructions">
-		  <span style="font-size:40px">Click to begin</span>
-			<br>
-			(W, A, S, D = Move, T = Skyline View, MOUSE = Look around)
+		<div id="blocker" style="display: -webkit-box;">
+			<div id="instructions">
+			  <span style="font-size:40px">Click to begin</span>
+				<br>
+				(W, A, S, D = Move, T = Skyline View, MOUSE = Look around)
+			</div>
 		</div>
-
-	  </div>
-      <script>
+		
+		<script>
 	  
-		var geometry, material, mesh;
-		
-		beginMovement();
-		
-        var drewTime = 0;
-        var prevTime = performance.now();
-       
-        // The current block of a width
-        var blockWidth = 40;
-        // The single loader for this program
-        var loader;
+			var geometry, material, mesh;
+			
+			beginMovement();
+			
+			var drewTime = 0;
+			var prevTime = performance.now();
+		   
+			// The current block of a width
+			var blockWidth = 40;
+			// The single loader for this program
+			var loader;
 
-        // The width and length of a chunk
-        var chunkWidth = 120;
-        var chunkLength = 200;
+			// The width and length of a chunk
+			var chunkWidth = 120;
+			var chunkLength = 250;
 
-        // The internal chunk grid
-        var chunks = [];
-        // An array of queued chunks
-        var queuedchunks = [];
-        // The group currently being added to
-        var currentGroup;
+			// The internal chunk grid
+			var chunks = [];
+			// An array of queued chunks
+			var queuedchunks = [];
+			// The group currently being added to
+			var currentGroup;
 
-        var fogFar = 200;
-        var fogNear = 175;
+			var fogFar = 200;
+			var fogNear = 175;
 
-        // A reference to the skybox mesh
-        var skybox;
-        // The environment map cameras used to add reflection to buildings
-        var environmentMapCameras = [];
+			// A reference to the skybox mesh
+			var skybox;
+			// The environment map cameras used to add reflection to buildings
+			var environmentMapCameras = [];
 
-        // Boolean representing whether skyline view is currently activated
-        var skylineView = false;
+			// Boolean representing whether skyline view is currently activated
+			var skylineView = false;
 
-        var buildingTextureNames = ["Brick", "Stucco", "Plaster", "Metal", "Tanbrick", 
-        "Tile", "Metalpanels", "Copper", "Metaltiles", "Concrete", 
-        "Concretepanels", "Zincpanels", "Granitestone", "Stonecladding", 
-        "SandstoneCladding"];
+			var buildingTextureNames = ["Brick", "Stucco", "Plaster", "Metal", "Tanbrick", 
+			"Tile", "Metalpanels", "Copper", "Metaltiles", "Concrete", 
+			"Concretepanels", "Zincpanels", "Granitestone", "Stonecladding", 
+			"SandstoneCladding"];
 
-        var glassBuildingTextureNames = ["Skyscraper1", "Skyscraper2", "Skyscraper3", "Skyscraper4"];
+			var glassBuildingTextureNames = ["Skyscraper1", "Skyscraper2", "Skyscraper3", "Skyscraper4"];
 
-        var windowTextureNames = ["windows1", "windows2", "windows3", 
-        "windows4", "windows5", "windows6", "windows7", "windows8"];
+			var windowTextureNames = ["windows1", "windows2", "windows3", 
+			"windows4", "windows5", "windows6", "windows7", "windows8"];
 
-		var availableBuildings = [];
-		
-        init();
-        animate();
+			var availableBuildings = [];
+			
+			init();
+			animate();
 
-        function init() {
+			function init() {
 
-          camera = new THREE.CombinedCamera(window.innerWidth / 2, window.innerHeight / 2, 75, 1, 100000, -500, 1000);
-          scene = new THREE.Scene();
-          scene.fog = new THREE.Fog(0xffffff, fogNear, fogFar);
+				camera = new THREE.CombinedCamera(window.innerWidth / 2, window.innerHeight / 2, 75, 1, 100000, -500, 1000);
+				scene = new THREE.Scene();
+				scene.fog = new THREE.Fog(0xffffff, fogNear, fogFar);
 
-          addLights();
-         
-          addControls();
-          
-          // Set up Renderer
-          
-          renderer = new THREE.WebGLRenderer();
-          renderer.setClearColor(0xffffff);
-          renderer.setPixelRatio(window.devicePixelRatio);
-          renderer.setSize(window.innerWidth, window.innerHeight);
+				addLights();
+				 
+				addControls();
+				  
+				// Set up Renderer
+				  
+				renderer = new THREE.WebGLRenderer();
+				renderer.setClearColor(0xffffff);
+				renderer.setPixelRatio(window.devicePixelRatio);
+				renderer.setSize(window.innerWidth, window.innerHeight);
+				  
+				renderer._microCache = new MicroCache();
+				 
+				loader = new THREE.TextureLoader();
+				  
+				loadMaterials();
+				  
+				addSkybox();
+				  
+				generateBuildings();
+				  
+				initializeCity();
+				  
+				document.body.appendChild(renderer.domElement);
+
+				window.addEventListener('resize', onWindowResize, false);
+			}
+
+			/**
+			 * Adds the skybox
+			 */
+			function addSkybox(){
+				geometry = new THREE.SphereGeometry(2000, 60, 40);  
+				  
+				var uniforms = {  
+				  texture: { type: 't', value: renderer._microCache.get('sky') },
+				  fogColor: {type: "vec3", value: [255, 255, 255]},
+				  fogNear: {type:"float", value: 1.0},
+				  fogFar: {type:"float", value: 1.0},
+				  height: {type:"float", value: 2000.0},
+				  horizon: {type:"float", value: 600}
+				};
+
+				/* Custom shader blends the fog closer to the horizon */
+				var material = new THREE.ShaderMaterial( {  
+				  uniforms:       uniforms,
+				  fog:            true,
+				  vertexShader    : THREE.SkyShader.vertexShader,
+				  fragmentShader  : THREE.SkyShader.fragmentShader
+				});
+
+				mesh = new THREE.Mesh(geometry, material);  
+				mesh.scale.set(-1, 1, 1);  
+				mesh.rotation.order = 'XZY';  
+				mesh.renderDepth = 1000.0;  
+				mesh.frustumCulled = false;
+				  
+				skybox = mesh;
+				scene.add(mesh);
+			}
+
+			/**
+			 * Adds the key handlers for this program
+			 */
+			function addControls(){	  
+				controls = new THREE.PointerLockControls(camera);
+				scene.add(controls.getObject());
+
+				var onKeyDown = function (event) {
+				switch (event.keyCode) {
+					case 87: // w
+						moveForward = true;
+						break;
+
+					case 65: // a
+						moveLeft = true;
+						break;
+
+					case 83: // s
+						moveBackward = true;
+						break;
+
+					case 68: // d
+						moveRight = true;
+						break;
+					  
+					case 84: // t
+						toggleSkylineView();
+						break;
+				}
+		  };
 		  
-          renderer._microCache = new MicroCache();
-          
-          loader = new THREE.TextureLoader();
-          
-          loadMaterials();
-          
-          addSkybox();
-          
-		  generateBuildings();
-		  
-          initializeCity();
-          
-          document.body.appendChild(renderer.domElement);
+		  var onKeyUp = function (event) {
+			switch (event.keyCode) {
+			case 87: // w
+			  moveForward = false;
+			  break;
+			case 65: // a
+			  moveLeft = false;
+			  break;
+			case 83: // s
+			  moveBackward = false;
+			  break;
+			case 68: // d
+			  moveRight = false;
+			  break;
+			}
+		  };
 
-          window.addEventListener('resize', onWindowResize, false);
-        }
-
-        /**
-         * Adds the skybox
-         */
-        function addSkybox(){
-          geometry = new THREE.SphereGeometry(2000, 60, 40);  
-          
-          var uniforms = {  
-            texture: { type: 't', value: renderer._microCache.get('sky') },
-            fogColor: {type: "vec3", value: [255, 255, 255]},
-            fogNear: {type:"float", value: 1.0},
-            fogFar: {type:"float", value: 1.0},
-            height: {type:"float", value: 2000.0},
-            horizon: {type:"float", value: 600}
-          };
-
-          /* Custom shader blends the fog closer to the horizon */
-          var material = new THREE.ShaderMaterial( {  
-            uniforms:       uniforms,
-            fog:            true,
-            vertexShader    : THREE.SkyShader.vertexShader,
-            fragmentShader  : THREE.SkyShader.fragmentShader
-          });
-
-          mesh = new THREE.Mesh(geometry, material);  
-          mesh.scale.set(-1, 1, 1);  
-          mesh.rotation.order = 'XZY';  
-          mesh.renderDepth = 1000.0;  
-          mesh.frustumCulled = false;
-          
-          skybox = mesh;
-          scene.add(mesh);
-        }
-
-        /**
-         * Adds the key handlers for this program
-         */
-        function addControls(){
-          
-          controls = new THREE.PointerLockControls(camera);
-          scene.add(controls.getObject());
-
-          var onKeyDown = function (event) {
-            switch (event.keyCode) {
-            case 87: // w
-              moveForward = true;
-              break;
-
-            case 65: // a
-              moveLeft = true;
-              break;
-
-            case 83: // s
-              moveBackward = true;
-              break;
-
-            case 68: // d
-              moveRight = true;
-              break;
-              
-            case 84: // t
-              toggleSkylineView();
-              break;
-            }
-          };
-          
-          var onKeyUp = function (event) {
-            switch (event.keyCode) {
-            case 87: // w
-              moveForward = false;
-              break;
-            case 65: // a
-              moveLeft = false;
-              break;
-            case 83: // s
-              moveBackward = false;
-              break;
-            case 68: // d
-              moveRight = false;
-              break;
-            }
-          };
-
+		  // Place user in center chunk
           controls.getObject().position.x = (chunkLength * 3) / 2;
           controls.getObject().position.z = (chunkWidth * 3) / 2;
           
@@ -236,907 +237,893 @@
           document.addEventListener('keyup', onKeyUp, false);
         }
 
-        /**
-         * Toggles the skyline view mode
-         */
-        function toggleSkylineView(){
-          skylineView = !skylineView;
-          var obj = controls.getObject();
-          var pitchObj = controls.getPitchObject();
-          
-          if (skylineView == true){
-            controls.enabled = false;
-            controlsEnabled = false;
-            scene.fog.near = 1;
-            scene.fog.far = chunkWidth * 6;
-            
-            obj._oldRotX = obj.rotation.x;
-            obj._oldRotY = obj.rotation.y;
-            
-            obj.rotation.y = -3.14159265;
-            obj.rotation.x = 3.14159265 / 3;
-            
-            obj._oldPitch = pitchObj.rotation.x;
-            pitchObj.rotation.x = Math.PI / 4;
-            
-            obj._oldX = controls.getObject().position.x;
-            obj._oldZ = controls.getObject().position.z;
-            
-            obj.position.y = 150;
-            obj.position.x = chunks[5]._posX - chunkLength / 2;
-            obj.position.z = chunks[5]._posZ - (chunkWidth * 3);
-            
-            skybox._oldHeight = skybox.material.uniforms.height.value;
-            skybox._oldHorizon = skybox.material.uniforms.horizon.value;
-            
-            skybox.material.uniforms.height.value = 400;
-            skybox.material.uniforms.height.needsUpdate = true;
-            skybox.material.uniforms.horizon.value = 100;
-            skybox.material.uniforms.horizon.needsUpdate = true;
-          }
-          else{
-            scene.fog.near = fogNear;
-            scene.fog.far = fogFar;
-            obj.position.y = 10;
-            obj.position.x = controls.getObject()._oldX;
-            obj.position.z = controls.getObject()._oldZ;
-            
-            skybox.material.uniforms.height.value = skybox._oldHeight;
-            skybox.material.uniforms.horizon.value = skybox._oldHorizon;
-            
-            obj.rotation.y = obj._oldRotY;
-            obj.rotation.x = obj._oldRotX;
-            pitchObj.rotation.x = obj._oldPitch;
-             
-            // We use a timeout function to be sure that world-generation - 
-            // active only when controlsEnabled == true, doesn't start up again until
-            // the camera has been returned to the center of the currently generated 
-            // map.
-            setTimeout(function(){
-              controls.enabled = true;
-              prevTime = performance.now();
-              controlsEnabled = true;
-            }, 250);
-          }
-        }
-
-        /*
-        
-        Chunks are represented using a grid system,  held in
-        CHUNKS, where the player is always in grid 5. Note that
-        the representation is not based in 0.
-        |---|---|---|
-        | 1 | 2 | 3 |
-        |---|---|---|
-        | 4 | 5 | 6 |
-        |---|---|---|
-        | 7 | 8 | 9 |
-        |---|---|---|
-        */
-        
-        /**
-         * Draws the initial chunks needed to represent the city 
-         */
-        function initializeCity(){
-          chunks[7] = generatechunk(0, 0);
-          chunks[8] = generatechunk(0, chunks[7]._posZ);
-          chunks[9] = generatechunk(0, chunks[8]._posZ);
-          
-          chunks[4] = generatechunk(chunks[7]._posX, 0);
-          chunks[5] = generatechunk(chunks[7]._posX, chunks[4]._posZ);
-          chunks[6] = generatechunk(chunks[7]._posX, chunks[5]._posZ);
-          
-          chunks[1] = generatechunk(chunks[6]._posX, 0);
-          chunks[2] = generatechunk(chunks[6]._posX, chunks[1]._posZ);
-          chunks[3] = generatechunk(chunks[6]._posX, chunks[2]._posZ);
-        }
-       
-       /**
-         * Attempts to drawn a queued chunk, if any are queued
-         */
-        function drawQueuedchunk(){
-          if (queuedchunks.length == 0){
-            return;
-          }
-          
-          var c = queuedchunks.shift();
-          
-          var posX, posZ;
-          
-          // A queued chunk is represented by a triplet of values - the
-          // destination slot in the grid, the value of another chunk whose x
-          // value to sample, and the value of a chunk whose y value to sample.
-          // These x and y values are the far (most positive) edges of the 
-          // chunks, so this functionally means that we want to sample a chunk
-          // immediately 'below' the new chunk in the grid for the x pos, and 
-          // a chunk immediately to the 'left' of a new chunk for the z pos. 
-          // Where such chunks are unavailable, a negative sample indicates
-          // that you want to draw the chunk 'before' (to the left or below) the
-          // sampled chunk.
-          if (c[1] == 0){
-            posX = chunks[8]._posX - chunkLength;
-          }
-          else {
-            if (c[1] < 0){
-              var cNum = Math.abs(c[1]);
-              posX = chunks[cNum]._posX - chunkLength * 2;
-            }
-            else {
-              posX = chunks[c[1]]._posX;
-            }
-          }
-          
-          if (c[2] == 0){
-            posZ = chunks[4]._posZ - chunkWidth;
-          }
-          else {
-             if (c[2] < 0){
-              var cNum = Math.abs(c[2]);
-              posZ = chunks[cNum]._posZ - chunkWidth * 2;
-            }
-            else {
-              posZ = chunks[c[2]]._posZ;
-            }
-          }
-          
-          chunks[c[0]] = generatechunk(posX, posZ);
-        }
-
-        /**
-         * Adds a triplet of chunks in the positive X direction
-         */
-        function addchunkXPositive(){
-          deleteChunk(chunks[9]);
-          deleteChunk(chunks[8]);
-          deleteChunk(chunks[7]);
-          
-          chunks[9] = chunks[6];
-          chunks[8] = chunks[5];
-          chunks[7] = chunks[4];
-          chunks[4] = chunks[1];
-          chunks[5] = chunks[2];
-          chunks[6] = chunks[3];
-          
-          queuedchunks.push([3, 6, 8]);
-          queuedchunks.push([2, 6, 7]);
-          queuedchunks.push([1, 6, 0]);
-        }
-
-        /**
-         * Adds a triplet of chunks in the negative X direction
-         */
-        function addchunkXNegative(){
-          deleteChunk(chunks[3]);
-          deleteChunk(chunks[2]);
-          deleteChunk(chunks[1]);
-          
-          chunks[3] = chunks[6];
-          chunks[2] = chunks[5];
-          chunks[1] = chunks[4];
-          chunks[4] = chunks[7];
-          chunks[5] = chunks[8];
-          chunks[6] = chunks[9];
-          
-          queuedchunks.push([7, -5, 0]);
-          queuedchunks.push([8, -5, 4]);
-          queuedchunks.push([9, -5, 5]);
-        }
-
-        /**
-         * Adds a triplet of chunks in the negative Z direction
-         */
-        function addchunkZNegative(){
-          deleteChunk(chunks[3]);
-          deleteChunk(chunks[6]);
-          deleteChunk(chunks[9]);
-          
-          chunks[3] = chunks[2];
-          chunks[6] = chunks[5];
-          chunks[9] = chunks[8];
-          chunks[2] = chunks[1];
-          chunks[5] = chunks[4];
-          chunks[8] = chunks[7];
-          
-          queuedchunks.push([1, 5, -5]);
-          queuedchunks.push([4, 8, -5]);
-          queuedchunks.push([7, -5, -5]);
-        }
-
-        /**
-         * Adds a triplet of chunks in the positive Z direction
-         */
-        function addchunkZPositive(){
-          deleteChunk(chunks[1]);
-          deleteChunk(chunks[4]);
-          deleteChunk(chunks[7]);
-          
-          chunks[1] = chunks[2];
-          chunks[4] = chunks[5];
-          chunks[7] = chunks[8];
-          chunks[2] = chunks[3];
-          chunks[5] = chunks[6];
-          chunks[8] = chunks[9];
-
-          queuedchunks.push([9, 0, 8]);
-          queuedchunks.push([6, 8, 8]);
-          queuedchunks.push([3, 5, 8]);
-        }
-
-         /**
-         * Deletes all of the buildings associated with a given chunk
-         * @param {object} group - The group containing the meshes associated with the chunk being deleted.
-         */
-        function deleteChunk(group){
-          
-          scene.remove(group);
-          
-          group.traverse(function(mesh) {
-			if (availableBuildings.length < 300 && mesh._is_building == true){
-				availableBuildings.push(mesh);
-			}
-          });
-          
-          group = null;
-        }
-
-         /**
-         * Adds the hemisphere and direcitonal light used for lighting the city
-         */
-        function addLights(){
-          var light = new THREE.HemisphereLight(0xeeeeff, 0x777788, 0.75);
-          light.position.set(0.5, 1, 0.75);
-          
-          scene.add(light);
-
-          dirLight = new THREE.DirectionalLight(0xffffff, 1);
-          dirLight.color.setHSL(0.1, 1, 0.95);
-          dirLight.position.set(-8, 40, 6);
-          dirLight.position.multiplyScalar(50);
-         
-          scene.add(dirLight);
-        }
-
-        /**
-         * Adds a 'chunk' of buildings. 
-         * @param {int} startX - The x position for the 'lower-left' corner of this chunk. 
-         *                       The chunk will generate in the positive direction away from this point.
-         * @param {int} startZ - The z position for the 'lower-left' corner of this chunk. 
-         *                       The chunk will generate in the positive direction away from this point.
-         */
-        function generatechunk(startX, startZ){
-        
-			// Location variables for placing each individual building/road.
-			var posX = startX;
-			var posY = 0;
-			var posZ = startZ;
-		  
-			// The width/height/depth of the mesh being added
-			var width = 0;
-			var height = 0;
-			var depth = 0;
-		  
-			// Whether we just drew a through road and need to abut it with
-			// another green strip
-			var drewRoad = false;
-		  
-			// The width of the previously drawn alleyway
-			var alley;
-		  
-			// Whether we are approaching the end of the chunk
-			var endOfchunk;
-			// A random number
-			var rand;
-		  
-			// The far edges of this chunk
-			var chunkXEdge = startX + chunkLength;
-			var chunkZEdge = startZ + chunkWidth;
-		  
-			// The building currently being added
-			var building;
-		  
-			// The group representing this chunk
-			currentGroup = new THREE.Object3D();
-		  
-			for (var i = 0; posZ < chunkZEdge; i++){
-				while (posX < chunkXEdge){
-				
-					rand = Math.random();  
-					endOfchunk = (chunkXEdge + width/2) - posX < 40;
-						 
-					if (rand > .05 || endOfchunk){
-						if (!drewRoad){  
-						  alley = Math.random() * 2 + .5;
-						  posX += alley;  
-						}
-						drewRoad = false;
-                  
-						// If the space until the edge of the chunk is <35, we
-						// create a custom building to fill that space
-						if (chunkXEdge - posX <= 35){
-							  width = chunkXEdge - posX;
-								
-							  // If the space is less than 10, we just add a strip of grass.
-							  if (width < 10){
-								addGreenStrip(width, posX, posZ);
-								break;
-							  }            
-							  
-							  height = randomHeight();
-							  depth = randomDepth();
-							  
-							  geometry = new THREE.BoxGeometry( width, height, depth);
-							  material = getRandomBuildingMaterial(width, height);
-							  building = new THREE.Mesh( geometry, material);
-						}
-						else {
-							// Pick a random available building
-							rand = Math.floor(Math.random() * availableBuildings.length);
-							console.log(availableBuildings.length);
-							building = availableBuildings.splice(2, 1)[0];
-							
-							width = building._width;
-							depth = building._depth;
-							height = building._height;          
-							
-							building.material.needsUpdate = true;
-							building.needsUpdate = true;
-						}
-						posX += width / 2;
-						posY = height / 2;
-						  
-						// Position the building
-						building.position.x = posX;
-						building.position.y = posY;
-						building.position.z = posZ;
-						  
-						posX += width / 2;
-						  
-						currentGroup.add(building);
-					}
-					// Five percent of the time, we add a through road
-					else {
-						// This adds a through-road connecting two adjacent blocks.
-						addGreenStrip(5, posX, posZ);
-						width = 13;
-						posX += width/2 + 5;
-						addThroughRoad(posX, posZ);
-						posX += width/2;
-						addGreenStrip(5, posX, posZ);
-						posX += 5;
-						drewRoad = true;
-					}
-				}
-				
-				// After each block, we draw a road
-				addRoad(startX, i, startZ);
-				addGround(chunkLength, startX, posZ);
-				posZ += blockWidth;
-				posX = startX;
-				width = 0;
-			}
-			
-           // We set variables identifying the leading x and z edges of this
-           // chunk
-           currentGroup._posX = chunkXEdge;
-           currentGroup._posZ = posZ;
-           
-           scene.add(currentGroup);
-           return currentGroup;
-		}
-
-		
-		function generateBuildings(){
-			var width;
-			var height;
-			var depth;
-			var building;
-			
-			for (var i = 0; i < 300; i++){
-				height = randomHeight();
-				width = randomWidth();
-				depth = randomDepth();
-				// ~ 15% of the buildings will be cylindrical, 
-				// with between 3 and 12 faces.				
-				if (i < 45){
-					width =  depth;
-					geometry = new THREE.CylinderBufferGeometry( depth/2, depth/2, height, (Math.random() * 9) + 3);
+			/**
+			 * Toggles the skyline view mode
+			 * Provides a semi-isometric view of the city
+			 */
+			function toggleSkylineView(){
+				skylineView = !skylineView;
+				var obj = controls.getObject();
+				var pitchObj = controls.getPitchObject();
+				  
+				if (skylineView == true){
+					controls.enabled = false;
+					controlsEnabled = false;
+					scene.fog.near = 1;
+					scene.fog.far = chunkWidth * 6;
+					
+					obj._oldRotX = obj.rotation.x;
+					obj._oldRotY = obj.rotation.y;
+					
+					obj.rotation.y = -3.14159265;
+					obj.rotation.x = 3.14159265 / 3;
+					
+					obj._oldPitch = pitchObj.rotation.x;
+					pitchObj.rotation.x = Math.PI / 4;
+					
+					obj._oldX = controls.getObject().position.x;
+					obj._oldZ = controls.getObject().position.z;
+					
+					obj.position.y = 150;
+					obj.position.x = chunks[5]._posX - chunkLength / 2;
+					obj.position.z = chunks[5]._posZ - (chunkWidth * 3);
+					
+					skybox._oldHeight = skybox.material.uniforms.height.value;
+					skybox._oldHorizon = skybox.material.uniforms.horizon.value;
+					
+					skybox.material.uniforms.height.value = 400;
+					skybox.material.uniforms.height.needsUpdate = true;
+					skybox.material.uniforms.horizon.value = 100;
+					skybox.material.uniforms.horizon.needsUpdate = true;
 				}
 				else{
-				   // Standard cube building
-				  geometry = new THREE.BoxBufferGeometry( width, height, depth);
+					scene.fog.near = fogNear;
+					scene.fog.far = fogFar;
+					obj.position.y = 10;
+					obj.position.x = controls.getObject()._oldX;
+					obj.position.z = controls.getObject()._oldZ;
+					
+					skybox.material.uniforms.height.value = skybox._oldHeight;
+					skybox.material.uniforms.horizon.value = skybox._oldHorizon;
+					
+					obj.rotation.y = obj._oldRotY;
+					obj.rotation.x = obj._oldRotX;
+					pitchObj.rotation.x = obj._oldPitch;
+					 
+					// We use a timeout function to be sure that world-generation - 
+					// active only when controlsEnabled == true, doesn't start up again until
+					// the camera has been returned to the center of the currently generated 
+					// map.
+					setTimeout(function(){
+					controls.enabled = true;
+					prevTime = performance.now();
+					controlsEnabled = true;
+					}, 250);
+				}
+		}
+
+			/*
+			Chunks are represented using a grid system,  held in
+			CHUNKS, where the player is always in grid 5. Note that
+			the representation is not based in 0.
+			x+
+			|---|---|---|
+			| 1 | 2 | 3 |
+			|---|---|---|
+			| 4 | 5 | 6 |
+			|---|---|---|
+			| 7 | 8 | 9 |
+			|---|---|---| z+
+			*/
+		
+			/**
+			 * Draws the initial chunks needed to represent the city 
+			 */
+			function initializeCity(){
+			    chunks[7] = generatechunk(0, 0);
+			    chunks[8] = generatechunk(0, chunks[7]._posZ);
+			    chunks[9] = generatechunk(0, chunks[8]._posZ);
+			  
+			    chunks[4] = generatechunk(chunks[7]._posX, 0);
+			    chunks[5] = generatechunk(chunks[7]._posX, chunks[4]._posZ);
+			    chunks[6] = generatechunk(chunks[7]._posX, chunks[5]._posZ);
+			  
+			    chunks[1] = generatechunk(chunks[6]._posX, 0);
+			    chunks[2] = generatechunk(chunks[6]._posX, chunks[1]._posZ);
+			    chunks[3] = generatechunk(chunks[6]._posX, chunks[2]._posZ);
+			}
+       
+			/**
+			 * Attempts to drawn a queued chunk, if any are queued
+			 */
+			function drawQueuedChunk(){
+			
+				if (queuedchunks.length == 0){
+					return false;
+				}
+			  
+				console.log("Drew chunk");
+			  
+				var c = queuedchunks.shift();
+			  
+				chunks[c[2]] = generatechunk(c[0], c[1]);
+				return true;
+			}
+
+			/**
+			 * Adds a triplet of chunks in the positive X direction
+			 */
+			function addchunksXPositive(){
+				while (queuedchunks.length != 0){
+					drawQueuedChunk();
+				}
+				for (var i = 7; i < 10; i++){
+					deleteChunk(chunks[i]);
 				}
 				
-				rand = Math.floor(Math.random() * 125);
+				for (var i = 9; i > 3; i--){
+					chunks[i] = chunks[i - 3];
+				}
 				
-				material = getRandomBuildingMaterial(width, height);
-				
-				building = new THREE.Mesh( geometry, material);
-				building._width = width;
-				building._depth = depth;
-				building._height = height;
-				building._is_building = true;
-				
-				availableBuildings.push(building);
+				queuedchunks.push([chunks[2]._posX, chunks[2]._posZ - chunkWidth, 2]);
+				queuedchunks.push([chunks[1]._posX, chunks[1]._posZ - chunkWidth, 1]);
+				queuedchunks.push([chunks[3]._posX, chunks[3]._posZ - chunkWidth, 3]);
 			}
-		}
+
+			/**
+			 * Adds a triplet of chunks in the negative X direction
+			 */
+			function addchunksXNegative(){
+				while (queuedchunks.length != 0){
+					drawQueuedChunk();
+				}
+				for (var i = 1; i < 4; i++){
+					deleteChunk(chunks[i]);
+				}
+				
+				for (var i = 1; i < 7; i++){
+					chunks[i] = chunks[i + 3];
+				}
+				
+				queuedchunks.push([chunks[8]._posX - (chunkLength * 2), chunks[8]._posZ - chunkWidth, 8]);
+				queuedchunks.push([chunks[7]._posX - (chunkLength * 2), chunks[7]._posZ - chunkWidth, 7]);
+				queuedchunks.push([chunks[9]._posX - (chunkLength * 2), chunks[9]._posZ - chunkWidth, 9]);
+			}
+
+			/**
+			 * Adds a triplet of chunks in the negative Z direction
+			 */
+			function addchunksZNegative(){
+				while (queuedchunks.length != 0){
+					drawQueuedChunk();
+				}
+				for (var i = 3; i < 10; i += 3){
+					deleteChunk(chunks[i]);
+				}
+				
+				for (var i = 9; i > 1; i--){
+					if (i == 4 || i == 7){
+						continue;
+					}
+					chunks[i] = chunks[i - 1];
+				}
 		
-        /**
-         * Adds a ground plane. 
-         * @param {int} width - The width of this ground plane.
-         * @param {int} posX - The x position for this ground plane.
-         * @param {int} posZ - The z position for this ground plane.
-         */
-        function addGround(width, posX, posZ){
-          material = renderer._microCache.get('ground'); 
-          
-          geometry = new THREE.PlaneBufferGeometry(width, 27, 1, 3);
-          geometry.rotateX( - Math.PI / 2);
-          
-          mesh = new THREE.Mesh(geometry, material);
-          
-          mesh.position.y = -.05;
-          mesh.position.z = posZ;
-          mesh.position.x = posX + (width / 2);
+				queuedchunks.push([chunks[4]._posX - chunkLength, chunks[4]._posZ - (chunkWidth * 2), 4]);
+				queuedchunks.push([chunks[1]._posX - chunkLength, chunks[1]._posZ - (chunkWidth * 2), 1]);
+				queuedchunks.push([chunks[7]._posX - chunkLength, chunks[7]._posZ - (chunkWidth * 2), 7]);
+			}
 
-          currentGroup.add(mesh);
-        }
-
-        /**
-         * Adds a green strip of grass. 
-         * @param {int} width - The width of this green strip.
-         * @param {int} posX - The x position for this green strip.
-         * @param {int} posZ - The z position for this green strip.
-         */
-        function addGreenStrip(width, posX, posZ){
-          material = renderer._microCache.get('greenStrip'); 
-          
-          geometry = new THREE.PlaneBufferGeometry(width, 27, 1, 3);
-          geometry.rotateX( - Math.PI / 2);
-          
-          mesh = new THREE.Mesh(geometry, material);
-
-          mesh.position.z = posZ;
-          mesh.position.x = posX + (width / 2);
-
-          currentGroup.add(mesh);
-          
-        }
-
-        /**
-         * Adds a through-road between two adjacent city blocks. 
-         * @param {int} posX - The x position for this through road.
-         * @param {int} posZ - The z position for this through road.
-         */
-        function addThroughRoad(posX, posZ){
-          geometry = renderer._microCache.get('throughroadgeo');
-          
-          naterial = renderer._microCache.get('throughroad');
-          
-          mesh = new THREE.Mesh(geometry, naterial);
-
-          mesh.position.z = posZ - .09;
-          mesh.position.x = posX;
-          mesh.position.y = .001;
-          currentGroup.add(mesh);
-        }
-
-        /**
-         * Adds a road seperating two city 'blocks' and running the length of a chunk. 
-         * @param {int} startX - The X value for the originating corner of the chunk.
-         * @param {int} num - The road 'number' in the context of a given chunk. Used to properly offset the road from startZ
-         * @param {int} startZ - The Z value for the originating corner of the chunk.
-         */
-        function addRoad(startX, num, startZ){
-
-          var roadGeometry = new THREE.PlaneGeometry(chunkLength, 13, 100, 100);
-          roadGeometry.rotateX( - Math.PI / 2);
-          
-          var roadMaterial = renderer._microCache.get('road');
-          
-          roadMesh = new THREE.Mesh(roadGeometry, roadMaterial);
-          
-          roadMesh.receiveShadow = true;
-          // We offset this road from the starting corner of the chunk by the width of
-          // a block times the 'number' of this road.
-          roadMesh.position.z = 20 + num * 40 + startZ;
-          // We also need to shift the road so that it's center along the x axis lies
-          // along the cneter of the chunk
-          roadMesh.position.x = startX + chunkLength/2;
-          
-          currentGroup.add(roadMesh);
-        }
-
-        /**
-         * Loads and caches the commonly used meshes, materials, and textures needed to draw the 
-         * city. 
-         * Noise function used to mottle ground texture comes 
-         * from https://github.com/ashima/webgl-noise, (C) Ashima Arts and Stefan Gustavson. 
-         * Used with permission.
-         */
-        function loadMaterials(){
-             
-          // Load sky texture
-          texture = loader.load(
-            './Textures/Sky.jpg',
-            function (texture) {
-            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(4, 4);
-          },
-            function (xhr) {
-            console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-          },
-            function (xhr) {
-            console.log('An error happened');
-          });
-          
-          renderer._microCache.set('sky', texture);
-          
-          // Load road texture
-          texture = loader.load(
-            './Textures/Road.jpg',
-            function (texture) {
-              texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-              texture.repeat.set(40, 1);
-              texture.anisotropy = renderer.getMaxAnisotropy();
-              texture.needsUpdate = true;
-            },
-            function (xhr) {
-            console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-          },
-            function (xhr) {
-            console.log('An error happened');
-          });
-          
-		  var uniforms = {
-            texture: { type: "t", value: texture },
-            fogColor: {type: "vec3", value: [255, 255, 255]},
-            fogNear: {type:"float", value: fogNear},
-            fogFar: {type:"float", value: fogFar},
-			repeatX: {type:"float", value: 1.0},
-			repeatY: {type:"float", value: 1.0}
-          };
-
-          material = new THREE.ShaderMaterial({
-            uniforms        : uniforms,
-            fog             : true,
-            vertexShader    : THREE.GroundShader.vertexShader,
-            fragmentShader  : THREE.GroundShader.fragmentShader
-          });
-          
-          renderer._microCache.set('road', material);
-          
-          
-          // Load grass texture
-          texture = loader.load(
-            './Textures/Grass.jpg',
-            function (texture) {
-              texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-              texture.repeat.set(2, 6);
-              texture.anisotropy = renderer.getMaxAnisotropy();
-              texture.needsUpdate = true;
-            },
-            function (xhr) {
-          },
-            function (xhr) {
-            console.log('An error happened');
-          });
-            
-          material = new THREE.MeshPhongMaterial({
-            map: texture
-          });
-              
-          renderer._microCache.set('greenStrip', material);
-          
-          
-          // Load ground material
-          texture = loader.load(
-            './Textures/Ground.jpg',
-            function (texture) {
-              texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-              texture.repeat.set(84, 12);
-              texture.anisotropy = renderer.getMaxAnisotropy() / 2;
-              texture.needsUpdate = true;
-            },
-            function (xhr) {
-          },
-            function (xhr) {
-            console.log('An error happened');
-          });
-            
-          var uniforms = {
-            texture: { type: "t", value: texture },
-            fogColor: {type: "vec3", value: [255, 255, 255]},
-            fogNear: {type:"float", value: fogNear},
-            fogFar: {type:"float", value: fogFar},
-			repeatX: {type:"float", value: 96.0},
-			repeatY: {type:"float", value: 8.0}
-          };
-
-          material = new THREE.ShaderMaterial({
-            uniforms        : uniforms,
-            fog             : true,
-            vertexShader    : THREE.GroundShader.vertexShader,
-            fragmentShader  : THREE.GroundShader.fragmentShader
-          });
-              
-          renderer._microCache.set('ground', material);
-          
-          
-          // Load through-road texture - This has a different repeat value than the
-          // regular road texture, and is used frequently, so must be loaded and
-          // stored seperately to avoid frequent cloning
-          texture = loader.load(
-            './Textures/Road.jpg',
-            function (texture) {
-              texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-              texture.repeat.set(5, 1);
-              texture.anisotropy = renderer.getMaxAnisotropy() / 2;
-              texture.needsUpdate = true;
-            },
-            function (xhr) {
-          },
-            function (xhr) {
-            console.log('An error happened');
-          });
-		  
-            var uniforms = {
-            texture: { type: "t", value: texture },
-            fogColor: {type: "vec3", value: [255, 255, 255]},
-            fogNear: {type:"float", value: fogNear},
-            fogFar: {type:"float", value: fogFar},
-			repeatX: {type:"float", value: 1.0},
-			repeatY: {type:"float", value: 1.0}
-          };
-
-          material = new THREE.ShaderMaterial({
-            uniforms        : uniforms,
-            fog             : true,
-            vertexShader    : THREE.GroundShader.vertexShader,
-            fragmentShader  : THREE.GroundShader.fragmentShader
-          });
-          
-          renderer._microCache.set('throughroad', material);
-          
-          // Load the geometry for through roads
-          geometry = new THREE.PlaneGeometry(31.88, 13, 1, 3);
-          geometry.rotateX( - Math.PI / 2);
-          geometry.rotateY(Math.PI / 2);
-          renderer._microCache.set('throughroadgeo', geometry);
-           
-          // Load all building materials
-          loadBuildingTextures();
-        }
-
-        /**
-         * Loads the window and building material textures into memory, storing them
-         * in the microcache for retrieval during material generation. Building textures
-         * were retrieved from http://architextur.es/, and are used with permission.
-         * Window and skyscraper textures originate from http://www.textures.com/,
-         * and are used in keeping with their associated licenses.         
-         */
-        function loadBuildingTextures(){
-         
-          for (var i = 0; i < glassBuildingTextureNames.length; i++){
-            texture = loader.load('./Textures/' + glassBuildingTextureNames[i] + '.jpg', function (texture){
-              texture.wrapS = texture.wrapT = THREE.RepeatWrapping;  
-              texture.repeat.set(3, 5);
-              texture.needsUpdate = true;
-            }, function () {}, function () {});      
-            texture.anisotropy = renderer.getMaxAnisotropy() / 2;
-            renderer._microCache.set(glassBuildingTextureNames[i], texture);
-          }
-          
-          for (i = 0; i < buildingTextureNames.length; i++){
-            texture = loader.load('./Textures/' + buildingTextureNames[i] + '.jpg', function (texture){
-              texture.wrapS = texture.wrapT = THREE.RepeatWrapping;  
-              texture.needsUpdate = true;
-            }, function () {}, function () {});      
-            texture.anisotropy = renderer.getMaxAnisotropy() / 2;
-            renderer._microCache.set(buildingTextureNames[i], texture);
-          }
-         
-          for (i = 0; i < windowTextureNames.length; i++){
-            texture = loader.load('./Textures/' + windowTextureNames[i] + '.png', function (texture){
-              texture.wrapS = texture.wrapT = THREE.RepeatWrapping;  
-              texture.needsUpdate = true;
-            }, function () {}, function () {} );    
-            texture.anisotropy = renderer.getMaxAnisotropy() / 2;
-            renderer._microCache.set(windowTextureNames[i], texture);
-          }
-          
-        }
-
-        /**
-         * Generates a random building material by combining a preselected color
-         * offset, background texture, and window texture. Height and width values are
-         * used to determine the repeat values.
-         * @param {int} width - The width of the building to which the material will be applied
-         * @param {int} height - The height of the building to which the material will be applied
-         */
-        function getRandomBuildingMaterial(width, height){
-          // Select a random building background texture
-          var rand = Math.floor(Math.random() * buildingTextureNames.length);
-          texture = renderer._microCache.get(buildingTextureNames[rand]);
-          
-          // Select a random window texture
-          rand = Math.floor(Math.random() * windowTextureNames.length);
-          var texture2 = renderer._microCache.get(windowTextureNames[rand]);
-         
-          // Get a random color offset
-          var color = getRandomColor();
-          
-          // Fog is also mixed as part of this custom shader, so fogNear and fogFar
-          // have to passed as uniforms
-          var uniforms = {
-            texture: { type: "t", value: texture },
-            texture2: { type: "t", value: texture2 },
-            height: {type:"float", value: (height)/2},
-            width: {type:"float", value: (width)/2},
-            rColor: {type: "vec3", value: color},
-            fogColor: {type: "vec3", value: [255, 255, 255]},
-            fogNear: {type:"float", value: fogNear},
-            fogFar: {type:"float", value: fogFar},
-          };
-
-          material = new THREE.ShaderMaterial({
-            uniforms        : uniforms,
-            fog             : true,
-            vertexShader    : THREE.BuildingShader.vertexShader,
-            fragmentShader  : THREE.BuildingShader.fragmentShader
-          });
-          
-          return material;
-        }
-
-        /**
-         * Randomly returns one of five pre-decided color offset values
-         */
-        function getRandomColor() {
-            var rand = Math.floor(Math.random() * 5);
-            
-            switch (rand){
-              case 0:
-              // Red-ish
-              return [.15, 0, 0];
-              case 1:
-              // Blue-ish
-              return [0, .025, 0];
-              case 2:
-              // Green-ish
-              return [0, 0, .05];
-              case 3:
-              // White-ish
-              return [.15, .15, .15];
-              case 4:
-              // Black-ish
-              return [-.35, -.35, -.35];
-            }
-        }
-
-        /**
-         * Randomly generates a building depth
-         */
-        function randomDepth(){
-          // Min depth is 1, Max depth is ~3.
-          return (Math.random() * 2 + 1) * 8;
-        }
-
-        /**
-         * Randomly generates a building width
-         */
-        function randomWidth(){
-          // Min width is 1, Max width is 3
-          return (Math.random() * 2 + 1) * 10;
-        }
-
-        /**
-         * Randomly generates a building height. Results are unevenly distributed,
-         * with taller buildings appearing somewhat less frequently.
-         */
-        function randomHeight(){
-          var rand = Math.random() * 10;
-          // 50% of the time building height is between 20 and 100
-          if (rand <= 9){
-            return 12 * (rand + 1);
-          }
-          else if (rand > 9){
-          // 10 percent of the time building height is between 3 and 18
-            return (Math.random() * 10 + 125); 
-          }
-
-        }
-
-        /**
-         * Alters camera's aspect ratio on window resize
-         */
-        function onWindowResize(){
-          camera.aspect = window.innerWidth / window.innerHeight;
-          camera.updateProjectionMatrix();
-          renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        /**
-         * Updates the scene. Runs at a maximum of 60 times per second.
-         */
-        function animate(){
-          requestAnimationFrame(animate);
-
-          if (controlsEnabled){
-       
-            var time = performance.now();
-			
-			// If the simulation freezes for more than a second,
-			// we'll wait for the next update to calculate delta
-			// and move
-            if (prevTime != 0 && time - prevTime > 1000){
-				prevTime = time;
-				return;
+		
+			/**
+			 * Adds a triplet of chunks in the positive Z direction
+			 */
+			function addchunksZPositive(){
+				while (queuedchunks.length != 0){
+					drawQueuedChunk();
+				}
+				for (var i = 1; i < 10; i+= 3){
+					deleteChunk(chunks[i]);
+				}
+				
+				for (var i = 1; i < 9; i++){
+					if (i == 3 || i == 6){
+						continue;
+					}
+					chunks[i] = chunks[i + 1];
+				}
+				
+				queuedchunks.push([chunks[6]._posX - chunkLength, chunks[6]._posZ, 6]);
+				queuedchunks.push([chunks[3]._posX - chunkLength, chunks[3]._posZ, 3]);
+				queuedchunks.push([chunks[9]._posX - chunkLength, chunks[9]._posZ, 9]);
 			}
 			
-            var delta = (time - prevTime) / 1000;
 
-            velocity.x -= velocity.x * 10.0 * delta;
-            velocity.z -= velocity.z * 10.0 * delta;
+			/**
+			 * Deletes all of the buildings associated with a given chunk
+			 * @param {object} group - The group containing the meshes associated with the chunk being deleted.
+			 */
+			function deleteChunk(group){
+				scene.remove(group);
+			  
+				group.traverse(function(mesh) {
+					scene.remove(mesh);
+					if (availableBuildings.length < 325 && mesh._is_building){
+						availableBuildings.push(mesh);
+					}
+					if (mesh._dispose){
+						mesh._geometry.dispose();
+						mesh._material.dispose();
+					}
+				});
+			  
+				group = null;
+			}
 
-            if (moveForward)
-              velocity.z -= 200.0 * delta;
-            if (moveBackward)
-              velocity.z += 200.0 * delta;
-            if (moveLeft)
-              velocity.x -= 200.0 * delta;
-            if (moveRight)
-              velocity.x += 200.0 * delta;
+			/**
+			 * Adds the hemisphere and direcitonal light used for lighting the city
+			 */
+			function addLights(){
+				var light = new THREE.HemisphereLight(0xeeeeff, 0x777788, 0.75);
+				light.position.set(0.5, 1, 0.75);
+			  
+				scene.add(light);
 
-            // Clamp velocity values to hopefully avoid getting 'thrown' across the map.
-            if (velocity.x > 20)
-              velocity.x = 20;
-            else if (velocity.x < -20)
-              velocity.x = -20;
-            if (velocity.z > 20)
-              velocity.z = 20;
-            else if (velocity.z < -20)
-              velocity.z = -20;
-              
-            controls.getObject().translateX(velocity.x * delta);
-            controls.getObject().translateZ(velocity.z * delta);
-            
-            // Every quarter of a second
-            if (time - drewTime > 125){
-              // Try to draw a queued chunk
-              drawQueuedchunk();
-              
-              // If we've crossed over into an adjacent chunk, queue a new triplet
-              // of chunks and reposition the skybox
-              if (controls.getObject().position.x > chunks[5]._posX + 10){
-                addchunkXPositive();
-                skybox.position.x = controls.getObject().position.x;
-              }
-              else if (controls.getObject().position.x < chunks[5]._posX - chunkLength - 10){
-                addchunkXNegative();
-                skybox.position.x = controls.getObject().position.x;
-              }
-              if (controls.getObject().position.z > chunks[5]._posZ + 10){
-                addchunkZPositive();
-                skybox.position.z = controls.getObject().position.z;
-              }
-              else if (controls.getObject().position.z < chunks[5]._posZ - chunkWidth - 10){
-                addchunkZNegative();
-                skybox.position.z = controls.getObject().position.z;
-              }
-              drewTime = performance.now();
-            }
-            
-            prevTime = time;
+				dirLight = new THREE.DirectionalLight(0xffffff, 1);
+				dirLight.color.setHSL(0.1, 1, 0.95);
+				dirLight.position.set(-8, 40, 6);
+				dirLight.position.multiplyScalar(50);
+			 
+				scene.add(dirLight);
+			}
 
-          }
-          renderer.render(scene, camera);
+			/**
+			 * Adds a 'chunk' of buildings. 
+			 * @param {int} startX - The x position for the 'lower-left' corner of this chunk. 
+			 *                       The chunk will generate in the positive direction away from this point.
+			 * @param {int} startZ - The z position for the 'lower-left' corner of this chunk. 
+			 *                       The chunk will generate in the positive direction away from this point.
+			 */
+			function generatechunk(startX, startZ){
+			
+				// Location variables for placing each individual building/road.
+				var posX = startX;
+				var posZ = startZ;
+			  
+				// The width/height/depth of the mesh being added
+				var width = 0;
+				var height = 0;
+			  
+				// Whether we just drew a through road and need to abut it with
+				// another green strip
+				var drewRoad = false;
+			  
+				// Whether we are approaching the end of the chunk
+				var endOfchunk;
+				// A random number
+				var rand;
+			  
+				// The far edges of this chunk
+				var chunkXEdge = startX + chunkLength;
+				var chunkZEdge = startZ + chunkWidth;
+			  
+				// The building currently being added
+				var building;
+			  
+				// The group representing this chunk
+				currentGroup = new THREE.Object3D();
+			  
+				for (var i = 0; posZ < chunkZEdge; i++){
+					while (posX < chunkXEdge){
+					
+						rand = Math.random();  
+						
+						// Detect whether is the end of a row of buildings in this chunk
+						endOfchunk = chunkXEdge - posX <= 35;
+						
+						// These 95 percent of the time, we add a building.
+						if (rand > .05 || endOfchunk){
+							// Adds random space to serve as 'alley' between buildings
+							if (!drewRoad){  
+							   posX += Math.random() * 2 + .5;
+							}
+							else {
+								drewRoad = false;
+							}
+							
+							// If the space until the edge of the chunk is <35, we
+							// create a custom building to fill that space
+							if (endOfchunk){
+								width = chunkXEdge - posX;
+									
+								// If the space is less than 10, we just add a strip of grass.
+								if (width < 10){
+									addGreenStrip(posX, posZ);
+									break;
+								}            
+								  
+								height = randomHeight();
+								  
+								geometry = new THREE.BoxBufferGeometry( width, height, randomDepth());
+								material = getRandomBuildingMaterial(width, height);
+								building = new THREE.Mesh( geometry, material);
+								  
+								building._dispose = true;
+								building._geometry = geometry;
+								building._material = material;
+							}
+							else {
+								// Pick a random available building
+								rand = Math.floor(Math.random() * availableBuildings.length);
+								building = availableBuildings.splice(2, 1)[0];
+								
+								width = building._width;
+								height = building._height;          
+								
+								building.material.needsUpdate = true;
+								building.needsUpdate = true;
+							}
+							
+							posX += width / 2;
+							  
+							// Position the building
+							building.position.x = posX;
+							building.position.y = height / 2;
+							building.position.z = posZ;
+							  
+							posX += width / 2;
+							  
+							currentGroup.add(building);
+						}
+						// Five percent of the time, we add a through road instead of a building
+						else {
+							// This adds a through-road connecting two adjacent blocks.
+							addGreenStrip(posX, posZ);
+							width = 13;
+							posX += 6.5 + 5;
+							addThroughRoad(posX, posZ);
+							posX += 6.5;
+							addGreenStrip(posX, posZ);
+							posX += 5;
+							drewRoad = true;
+						}
+					}
+					
+					// After each block, we draw a road
+					addRoad(startX, i, startZ);
+					addGround(chunkLength, startX, posZ);
+					posZ += blockWidth;
+					posX = startX;
+					width = 0;
+				}
+				
+			   // We set variables identifying the leading x and z edges of this
+			   // chunk
+			   currentGroup._posX = chunkXEdge;
+			   currentGroup._posZ = posZ;
+			   
+			   scene.add(currentGroup);
+			   return currentGroup;
+			}
 
-}
+			/**
+			 * Generates a random set of buildings to be reused when creating each chunk
+			 */
+			function generateBuildings(){
+				var width;
+				var height;
+				var depth;
+				var building;
+				
+				for (var i = 0; i < 325; i++){
+					height = randomHeight();
+					// ~ 15% of the buildings will be cylindrical, 
+					// with between 3 and 12 faces.				
+					if (i < 49){
+						width = randomDepth();
+						geometry = new THREE.CylinderBufferGeometry( width/2, width/2, height, (Math.random() * 9) + 3);
+					}
+					else{
+						width = randomWidth();
+					   // Standard cube building
+					  geometry = new THREE.BoxBufferGeometry( width, height, randomDepth());
+					}
+					
+					rand = Math.floor(Math.random() * 125);
+					
+					material = getRandomBuildingMaterial(width, height);
+					
+					building = new THREE.Mesh( geometry, material);
+					building._width = width;
+					building._height = height;
+					building._is_building = true;
+					
+					availableBuildings.push(building);
+				}
+			}
+		
+			/**
+			 * Adds a ground plane. 
+			 * @param {int} width - The width of this ground plane.
+			 * @param {int} posX - The x position for this ground plane.
+			 * @param {int} posZ - The z position for this ground plane.
+			 */
+			function addGround(width, posX, posZ){
+				material = renderer._microCache.get('ground'); 
+				geometry = renderer._microCache.get('groundGeo'); 
+			  
+				mesh = new THREE.Mesh(geometry, material);
+			  
+				mesh.position.y = -.05;
+				mesh.position.z = posZ;
+				mesh.position.x = posX + (width / 2);
 
-      </script>  
- 
-    <canvas width = "1920" height = "1014" style = "width: 1920px; height: 1014px;">  </canvas>
+				currentGroup.add(mesh);
+			}
 
-  </body>  
+			/**
+			 * Adds a green strip of grass. 
+			 * @param {int} width - The width of this green strip.
+			 * @param {int} posX - The x position for this green strip.
+			 * @param {int} posZ - The z position for this green strip.
+			 */
+			function addGreenStrip(posX, posZ){
+				material = renderer._microCache.get('greenStrip'); 
+			  
+				geometry = renderer._microCache.get('greenStripGeo');
+			  
+				mesh = new THREE.Mesh(geometry, material);
 
+				mesh.position.z = posZ;
+				mesh.position.x = posX + (5 / 2);
+
+				currentGroup.add(mesh);
+			}
+
+			/**
+			 * Adds a through-road between two adjacent city blocks. 
+			 * @param {int} posX - The x position for this through road.
+			 * @param {int} posZ - The z position for this through road.
+			 */
+			function addThroughRoad(posX, posZ){
+			    geometry = renderer._microCache.get('throughroadgeo');
+			  
+			    naterial = renderer._microCache.get('throughroad');
+			  
+			    mesh = new THREE.Mesh(geometry, naterial);
+
+			    mesh.position.z = posZ - .09;
+			    mesh.position.x = posX;
+			    mesh.position.y = .001;
+			    currentGroup.add(mesh);
+			}
+
+			/**
+			 * Adds a road seperating two city 'blocks' and running the length of a chunk. 
+			 * @param {int} startX - The X value for the originating corner of the chunk.
+			 * @param {int} num - The road 'number' in the context of a given chunk. Used to properly offset the road from startZ
+			 * @param {int} startZ - The Z value for the originating corner of the chunk.
+			 */
+			function addRoad(startX, num, startZ){
+			    var roadGeometry = renderer._microCache.get('roadGeo');
+			    var roadMaterial = renderer._microCache.get('road');
+			  
+			    roadMesh = new THREE.Mesh(roadGeometry, roadMaterial);
+			  
+			    roadMesh.receiveShadow = true;
+			    // We offset this road from the starting corner of the chunk by the width of
+			    // a block times the 'number' of this road.
+			    roadMesh.position.z = 20 + num * 40 + startZ;
+			    // We also need to shift the road so that it's center along the x axis lies
+			    // along the cneter of the chunk
+			    roadMesh.position.x = startX + chunkLength/2;
+			  
+			    currentGroup.add(roadMesh);
+			}
+
+			/**
+			 * Loads and caches the commonly used meshes, materials, and textures needed to draw the 
+			 * city. 
+			 * Noise function used to mottle ground texture comes 
+			 * from https://github.com/ashima/webgl-noise, (C) Ashima Arts and Stefan Gustavson. 
+			 * Used with permission.
+			 */
+			function loadMaterials(){
+				 
+			    // Load sky texture
+			    texture = loader.load(
+					'./Textures/Sky.jpg',
+					function (texture) {
+						texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+						texture.repeat.set(4, 4);
+					},
+					function (xhr) {
+					console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+					},
+					function (xhr) {
+					console.log('An error happened');
+				});
+			  
+				renderer._microCache.set('sky', texture);
+			  
+				// Load road texture
+				texture = loader.load(
+					'./Textures/Road.jpg',
+					function (texture) {
+						texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+						texture.repeat.set(40, 1);
+						texture.anisotropy = renderer.getMaxAnisotropy();
+						texture.needsUpdate = true;
+					},
+					function (xhr) {
+						console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+					},
+					function (xhr) {
+						console.log('An error happened');
+				});
+			  
+				var uniforms = {
+					texture: { type: "t", value: texture },
+					fogColor: {type: "vec3", value: [255, 255, 255]},
+					fogNear: {type:"float", value: fogNear},
+					fogFar: {type:"float", value: fogFar},
+					repeatX: {type:"float", value: 1.0},
+					repeatY: {type:"float", value: 1.0}
+				};
+
+				material = new THREE.ShaderMaterial({
+					uniforms        : uniforms,
+					fog             : true,
+					vertexShader    : THREE.GroundShader.vertexShader,
+					fragmentShader  : THREE.GroundShader.fragmentShader
+				});
+			  
+				renderer._microCache.set('road', material);
+			  
+				// Load road geometry
+				geometry = new THREE.PlaneGeometry(chunkLength, 13, 100, 100);
+				geometry.rotateX( - Math.PI / 2);
+				renderer._microCache.set('roadGeo', geometry);
+			  
+			  
+				// Load grass texture
+				texture = loader.load(
+					'./Textures/Grass.jpg',
+					function (texture) {
+						texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+						texture.repeat.set(2, 6);
+						texture.anisotropy = renderer.getMaxAnisotropy();
+						texture.needsUpdate = true;
+					},
+					function (xhr) {
+					},
+					function (xhr) {
+					console.log('An error happened');
+				});
+				
+				material = new THREE.MeshPhongMaterial({
+					map: texture
+				});
+				  
+				renderer._microCache.set('greenStrip', material);
+			  
+				// Load greenStrip geometry
+				geometry = new THREE.PlaneBufferGeometry(5, 27, 1, 3);
+				geometry.rotateX( - Math.PI / 2);
+			  
+				renderer._microCache.set('greenStripGeo', geometry);
+  
+			  
+				// Load ground material
+				texture = loader.load(
+					'./Textures/Ground.jpg',
+					function (texture) {
+						texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+						texture.repeat.set(84, 12);
+						texture.anisotropy = renderer.getMaxAnisotropy() / 2;
+						texture.needsUpdate = true;
+					},
+					function (xhr) {
+					},
+					function (xhr) {
+						console.log('An error happened');
+					});
+				
+				var uniforms = {
+					texture: { type: "t", value: texture },
+					fogColor: {type: "vec3", value: [255, 255, 255]},
+					fogNear: {type:"float", value: fogNear},
+					fogFar: {type:"float", value: fogFar},
+					repeatX: {type:"float", value: 96.0},
+					repeatY: {type:"float", value: 8.0}
+				};
+
+				material = new THREE.ShaderMaterial({
+					uniforms        : uniforms,
+					fog             : true,
+					vertexShader    : THREE.GroundShader.vertexShader,
+					fragmentShader  : THREE.GroundShader.fragmentShader
+				});
+				  
+				renderer._microCache.set('ground', material);
+			  
+				// Load ground geometry
+				geometry = new THREE.PlaneBufferGeometry(chunkLength, 27, 1, 3);
+				geometry.rotateX( - Math.PI / 2);
+				renderer._microCache.set('groundGeo', geometry);
+			  
+				// Load through-road texture - This has a different repeat value than the
+				// regular road texture, and is used frequently, so must be loaded and
+				// stored seperately to avoid frequent cloning
+				texture = loader.load(
+					'./Textures/Road.jpg',
+					function (texture) {
+						texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+						texture.repeat.set(5, 1);
+						texture.anisotropy = renderer.getMaxAnisotropy() / 2;
+						texture.needsUpdate = true;
+					},
+					function (xhr) {
+					},
+					function (xhr) {
+						console.log('An error happened');
+				});
+			  
+				var uniforms = {
+					texture: { type: "t", value: texture },
+					fogColor: {type: "vec3", value: [255, 255, 255]},
+					fogNear: {type:"float", value: fogNear},
+					fogFar: {type:"float", value: fogFar},
+					repeatX: {type:"float", value: 1.0},
+					repeatY: {type:"float", value: 1.0}
+				};
+
+				material = new THREE.ShaderMaterial({
+					uniforms        : uniforms,
+					fog             : true,
+					vertexShader    : THREE.GroundShader.vertexShader,
+					fragmentShader  : THREE.GroundShader.fragmentShader
+				});
+			  
+				renderer._microCache.set('throughroad', material);
+			  
+				// Load the geometry for through roads
+				geometry = new THREE.PlaneGeometry(31.88, 13, 1, 3);
+				geometry.rotateX( - Math.PI / 2);
+				geometry.rotateY(Math.PI / 2);
+				renderer._microCache.set('throughroadgeo', geometry);
+			   
+				// Load all building materials
+				loadBuildingTextures();
+			}
+
+			/**
+			 * Loads the window and building material textures into memory, storing them
+			 * in the microcache for retrieval during material generation. Building textures
+			 * were retrieved from http://architextur.es/, and are used with permission.
+			 * Window and skyscraper textures originate from http://www.textures.com/,
+			 * and are used in keeping with their associated licenses.         
+			 */
+			function loadBuildingTextures(){
+			 
+				for (var i = 0; i < glassBuildingTextureNames.length; i++){
+					texture = loader.load('./Textures/' + glassBuildingTextureNames[i] + '.jpg', 
+					function (texture){
+						texture.wrapS = texture.wrapT = THREE.RepeatWrapping;  
+						texture.repeat.set(3, 5);
+						texture.needsUpdate = true;
+					}, function () {}, function () {});      
+					texture.anisotropy = renderer.getMaxAnisotropy() / 2;
+					renderer._microCache.set(glassBuildingTextureNames[i], texture);
+				}
+			  
+				for (i = 0; i < buildingTextureNames.length; i++){
+					texture = loader.load('./Textures/' + buildingTextureNames[i] + '.jpg', 
+					function (texture){
+						texture.wrapS = texture.wrapT = THREE.RepeatWrapping;  
+						texture.needsUpdate = true;
+					}, function () {}, function () {});      
+					texture.anisotropy = renderer.getMaxAnisotropy() / 2;
+					renderer._microCache.set(buildingTextureNames[i], texture);
+				}
+			 
+				for (i = 0; i < windowTextureNames.length; i++){
+					texture = loader.load('./Textures/' + windowTextureNames[i] + '.png', 
+					function (texture){
+						texture.wrapS = texture.wrapT = THREE.RepeatWrapping;  
+						texture.needsUpdate = true;
+					}, function () {}, function () {} );    
+					texture.anisotropy = renderer.getMaxAnisotropy() / 2;
+					renderer._microCache.set(windowTextureNames[i], texture);
+				}
+			  
+			}
+
+			/**
+			 * Generates a random building material by combining a preselected color
+			 * offset, background texture, and window texture. Height and width values are
+			 * used to determine the repeat values.
+			 * @param {int} width - The width of the building to which the material will be applied
+			 * @param {int} height - The height of the building to which the material will be applied
+			 */
+			function getRandomBuildingMaterial(width, height){
+				// Select a random building background texture
+				var rand = Math.floor(Math.random() * buildingTextureNames.length);
+				texture = renderer._microCache.get(buildingTextureNames[rand]);
+			  
+				// Select a random window texture
+				rand = Math.floor(Math.random() * windowTextureNames.length);
+				var texture2 = renderer._microCache.get(windowTextureNames[rand]);
+			 
+				// Get a random color offset
+				var color = getRandomColor();
+			  
+				// Fog is also mixed as part of this custom shader, so fogNear and fogFar
+				// have to passed as uniforms
+				var uniforms = {
+					texture: { type: "t", value: texture },
+					texture2: { type: "t", value: texture2 },
+					height: {type:"float", value: (height)/2},
+					width: {type:"float", value: (width)/2},
+					rColor: {type: "vec3", value: color},
+					fogColor: {type: "vec3", value: [255, 255, 255]},
+					fogNear: {type:"float", value: fogNear},
+					fogFar: {type:"float", value: fogFar},
+				};
+
+				material = new THREE.ShaderMaterial({
+					uniforms        : uniforms,
+					fog             : true,
+					vertexShader    : THREE.BuildingShader.vertexShader,
+					fragmentShader  : THREE.BuildingShader.fragmentShader
+				});
+			  
+				return material;
+			}
+
+			/**
+			 * Randomly returns one of five pre-decided color offset values
+			 */
+			function getRandomColor() {
+				var rand = Math.floor(Math.random() * 5);
+				
+				switch (rand){
+					case 0:
+						// Red-ish
+						return [.15, 0, 0];
+					case 1:
+						// Blue-ish
+						return [0, .025, 0];
+					case 2:
+						// Green-ish
+						return [0, 0, .05];
+					case 3:
+						// White-ish
+						return [.15, .15, .15];
+					case 4:
+						// Black-ish
+						return [-.35, -.35, -.35];
+				}
+			}
+
+			/**
+			 * Randomly generates a building depth
+			 */
+			function randomDepth(){
+				// Min depth is 1, Max depth is ~3.
+				return (Math.random() * 2 + 1) * 8;
+			}
+
+			/**
+			 * Randomly generates a building width
+			 */
+			function randomWidth(){
+				// Min width is 1, Max width is 3
+				return (Math.random() * 2 + 1) * 10;
+			}
+
+			/**
+			 * Randomly generates a building height. Results are unevenly distributed,
+			 * with taller buildings appearing somewhat less frequently.
+			 */
+			function randomHeight(){
+				var rand = Math.random() * 10;
+				// 90% of the time building height is between 20 and 100
+				if (rand <= 9){
+					return 12 * (rand + 1);
+				}
+				else if (rand > 9){
+				// 10% of the time building height is between 3 and 18
+					return (Math.random() * 10 + 125); 
+				}
+			}
+
+			/**
+			 * Alters camera's aspect ratio on window resize
+			 */
+			function onWindowResize(){
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize(window.innerWidth, window.innerHeight);
+			}
+
+			/**
+			 * Updates the scene. Runs at a maximum of 60 times per second.
+			 */
+			function animate(){
+				requestAnimationFrame(animate);
+
+				if (controlsEnabled){
+		   
+					var time = performance.now();
+				
+					// If the simulation freezes for more than a second,
+					// we'll wait for the next update to calculate delta
+					// and move
+					if (prevTime != 0 && time - prevTime > 1000){
+						prevTime = time;
+						return;
+					}
+				
+					var delta = (time - prevTime) / 1000;
+
+					velocity.x -= velocity.x * 10.0 * delta;
+					velocity.z -= velocity.z * 10.0 * delta;
+
+					if (moveForward)
+						velocity.z -= 200.0 * delta;
+					if (moveBackward)
+						velocity.z += 200.0 * delta;
+					if (moveLeft)
+						velocity.x -= 200.0 * delta;
+					if (moveRight)
+						velocity.x += 200.0 * delta;
+				  
+					if (velocity.x > 20 || velocity.x < -20){
+							velocity.x = 20;
+					}
+					if (velocity.z > 20 || velocity.z < -20){
+						velocity.z = 20;
+					}
+				
+					controls.getObject().translateX(velocity.x * delta);
+					controls.getObject().translateZ(velocity.z * delta);
+				
+					// Every quarter of a second
+					if (time - drewTime > 250){
+						// Try to draw a queued chunk
+						drawQueuedChunk();
+				  
+						var px = controls.getObject().position.x;
+						var pz = controls.getObject().position.z;
+						// If we've crossed over into an adjacent chunk, queue a new triplet
+						// of chunks and reposition the skybox
+						if (px > chunks[5]._posX + 10){
+							addchunksXPositive();
+							skybox.position.x = controls.getObject().position.x;
+						}
+
+						else if (px < chunks[5]._posX - chunkLength - 10){
+							addchunksXNegative();
+							skybox.position.x = controls.getObject().position.x;
+						}
+						
+						if (pz > chunks[5]._posZ + 10){
+							addchunksZPositive();
+							skybox.position.z = controls.getObject().position.z;
+						}
+					  
+						if (pz < chunks[5]._posZ - chunkWidth - 10){
+							addchunksZNegative();
+							skybox.position.z = controls.getObject().position.z;
+						}
+						drewTime = performance.now();
+					}
+					prevTime = time;
+				}
+				renderer.render(scene, camera);
+			}
+
+		</script>  
+		<canvas width = "1920" height = "1014" style = "width: 1920px; height: 1014px;">  </canvas>
+	</body>  
 </html>
